@@ -1,0 +1,15 @@
+{
+  "framerate": 8,
+  "images": ["img/tiles_spritesheet.png"],
+  "frames":
+  {"width": 70, "height": 70, "regX": 0, "regY": 0, "spacing": 2},
+
+
+  "animations": {
+    "12": [12],
+    "15": [15],
+    "26": [26],
+    "103": [103],
+    "152": [152]
+  }
+}

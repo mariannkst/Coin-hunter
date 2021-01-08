@@ -1,0 +1,12 @@
+{
+  "framerate": 6,
+  "images": ["img/hero_sprite.png"],
+  "frames": {"width": 50, "height": 50, "regX": 0, "regY": 0},
+  "animations": {
+        "herogoes": [0,2],
+        "stands": [1],
+        "fall": [3,11, "down"],
+        "down": [11]
+
+  }
+}

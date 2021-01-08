@@ -1,0 +1,11 @@
+{
+  "framerate": 6,
+  "images": ["img/arrowkeys_sprite.png"],
+  "frames":
+  {"width": 400, "height": 280, "regX": 0, "regY": 0, "spacing": 0},
+
+
+  "animations": {
+    "keyworks": [0,15]
+  }
+}

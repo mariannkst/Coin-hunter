@@ -1,0 +1,22 @@
+{
+  "framerate": 8,
+  "images": ["img/hearts_sprite.png"],
+  "frames": [
+    [19, 14, 81, 84],
+    [115, 14, 81, 84],
+    [115, 14, 272, 84],
+    [19, 14, 272, 84],
+    [19, 111, 272, 84],
+    [19, 208, 272, 84]
+    
+      ],
+
+  "animations": {
+    "oneHeart": [0],
+    "noHeart": [1],
+    "zeroLife": [2],
+    "oneLife": [3],
+    "twoLives": [4],
+    "threeLives": [5]
+  }
+}

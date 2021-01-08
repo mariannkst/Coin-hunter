@@ -1,0 +1,10 @@
+{
+  "framerate": 8,
+  "images": ["img/herofall.png"],
+  "frames": {"width": 200, "height": 200, "regX": 0, "regY": 0},
+  "animations": {
+        "herofall": [0,8, "heroDown"],
+        "heroDown": [8]
+
+  }
+}

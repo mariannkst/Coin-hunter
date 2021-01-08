@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Game</title>
+    <link href="https://fonts.googleapis.com/css?family=Antic|Varela+Round" rel="stylesheet">
+    <style>
+        body {
+            color: #fff;
+            background-image: url("img/backgroundpic.png");
+            background-repeat: repeat;
+            width: auto;
+            height: auto;
+            font-family: 'Antic', sans-serif;
+
+        }
+
+
+        canvas {
+            background-color: #dbb57f;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            margin-top: 50px;
+            border: 10px solid #846741;
+            border-radius: 25px;
+            box-shadow: 4px 3px 10px #503b28;
+
+        }
+
+        p {
+            margin-top: 2em;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <canvas id="myCanvas" height="650" width="850"></canvas>
+
+    <p>by Mariann Karszt in 2018. Thanks for colourbox.com,
+    freesound.org and kenney.nl for the images and the audio.</p>
+
+
+</body>
+
+<script src="createjs.min.js"></script>
+<script>
+
+    "use strict";
+
+    //constants
+    let TILESIZE = 50;
+
+    //variables
+    let stage, queue, playground, grid, treatBox, treatData;
+    let level, coins, lives, timer, points;
+    let hero;
+    let enemies, enemyLevelData;
+    let tile;
+
+    //containers
+    let loadingContainer;
+    let bigContainer, bgBlur, button;
+    let upperContainer, coinDispPic, coinGrayDispPic, coinsNumber,  pointsNumber;
+    let bottomContainer, livesSprite, timeNumber;
+
+
+    // music
+    let startTheme, happyTheme, coinSound, levelWin, levelFail, tickSound;
+    let muted = false;
+    let backgroundMusicOn = false;
+
+
+    // necessary global values, booleans
+    let hitTest = false;
+    let levelRepeat = false;
+
+    // font type
+
+    let font = "Arial";
+    let bigFont = "'Varela Round', sans-serif";
+
+    // timer
+    let tickCounter, second;
+
+
+
+    window.addEventListener("load", preload);
+
+    function preload() {
+
+        //initializing
+        stage = new createjs.Stage("myCanvas");
+
+        // load text and elements
+        queue = new createjs.LoadQueue(true);
+        queue.installPlugin(createjs.Sound);
+        queue.addEventListener('progress', progress);
+        queue.addEventListener('complete', startScreen);
+
+        queue.loadManifest(
+            [   {"id":"jungle", "src":"img/jungle.jpg"},
+
+                "img/tiles_spritesheet.png",
+
+                {"id":"startTheme", "src":"audio/starttheme.mp3"},
+
+                {"id":"happyTheme", "src":"audio/happytheme.wav"},
+
+                {"id":"levelWin", "src":"audio/levelwin.wav"},
+
+                {"id":"levelFail", "src":"audio/levelfailed.mp3"},
+
+                {"id":"click", "src":"audio/click.wav"},
+
+                {"id":"coinPick", "src":"audio/coinpick.mp3"},
+
+                {"id":"ticking", "src":"audio/ticking.wav"},
+
+                {   "id":"hero",
+                    "src": "img/hero.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"enemy1",
+                    "src": "img/enemy1.png"
+                },
+                {   "id":"enemy2",
+                    "src": "img/enemy2.png"
+                },
+                {   "id":"enemy3",
+                    "src": "img/enemy3.png"
+                },
+                {   "id":"enemy4",
+                    "src": "img/enemy4.png"
+                },
+                {   "id":"enemy5",
+                    "src": "img/enemy5.png"
+                },
+
+                {   "id":"enemies",
+                    "src": "img/enemies.json"
+                },
+
+                {   "id":"tiles",
+                    "src": "img/tiles.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"levels",
+                    "src":"img/level.json"
+                },
+
+                {   "id":"logo",
+                    "src":"img/logo.png"
+                },
+
+                {   "id":"coins",
+                    "src": "img/coins.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"hearts",
+                    "src": "img/hearts.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"stars",
+                    "src": "img/stars.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"congrats",
+                    "src": "img/congrats.png"
+                },
+
+                {   "id":"noMoreLevels",
+                    "src": "img/nomore.png"
+                },
+
+                {   "id":"gameOver",
+                    "src": "img/gameover.png"
+                },
+                {   "id":"goals",
+                    "src": "img/goals.png"
+                },
+                {   "id":"oops",
+                    "src": "img/oops.png"
+                },
+                {   "id":"timesUp",
+                    "src": "img/timesup.png"
+                },
+
+                {   "id":"play",
+                    "src": "img/playbttn.png"
+                },
+
+                {   "id":"reStart",
+                    "src": "img/restartbttn.png"
+                },
+
+                {   "id":"start",
+                    "src": "img/startbttn.png"
+                },
+
+                {   "id":"next",
+                    "src": "img/nextbttn.png"
+                },
+
+                {   "id":"tryAgain",
+                    "src": "img/tryagainbttn.png"
+                },
+
+                {   "id":"arrowkeys",
+                    "src": "img/arrowkeys.json",
+                    "type":"spritesheet"
+                },
+
+                {   "id":"soundOn",
+                    "src": "img/soundOn.png"
+                },
+                {   "id":"soundOff",
+                    "src": "img/soundOff.png"
+                },
+                {   "id":"treats",
+                    "src": "img/treats.json"
+                }
+
+
+            ]
+        )
+    }
+
+
+    function progress (e){
+        //console.log(e);
+
+        stage.removeAllChildren();
+
+        loadingContainer = new createjs.Container();
+
+        let loadingText = new createjs.Text("Loading...","28px " + bigFont,"#6d5531");
+        loadingText.textAlign = "center";
+        loadingText.textBaseline = "middle";
+        loadingText.x = stage.canvas.width / 2;
+        loadingText.y = stage.canvas.height *0.75 -50;
+
+        let loadingBarTop = new createjs.Shape();
+        loadingBarTop.graphics.beginFill("#6d5531").drawRect(0,0, 130, 2);
+        loadingBarTop.regX = 65;
+        loadingBarTop.x = stage.canvas.width / 2;
+        loadingBarTop.y = stage.canvas.height / 2 + 50;
+
+        let loadingBarBottom = new createjs.Shape();
+        loadingBarBottom.graphics.beginFill("#6d5531").drawRect(0,0, 130, 2);
+        loadingBarBottom.regX = 65;
+        loadingBarBottom.x = stage.canvas.width / 2;
+        loadingBarBottom.y = stage.canvas.height / 2 + 68;
+
+
+        let loadingBarRight = new createjs.Shape();
+        loadingBarRight.graphics.beginFill("#6d5531").drawRect(0,0, 2, 20);
+        loadingBarRight.x = stage.canvas.width / 2 + 63;
+        loadingBarRight.y = stage.canvas.height / 2 + 50;
+
+
+        let loadingBarFill = new createjs.Shape();
+        loadingBarFill.graphics.beginFill("#6d5531").drawRect(0,0, 2 + (e.progress * 126), 20);
+        loadingBarFill.x = (stage.canvas.width / 2 - 65);
+        loadingBarFill.y = stage.canvas.height / 2 + 50;
+
+        loadingContainer.addChild(loadingText, loadingBarTop, loadingBarBottom, loadingBarRight, loadingBarFill);
+        stage.addChild(loadingContainer);
+
+        stage.update(e);
+
+
+    }
+
+    function startScreen() {
+        console.log("loaded");
+
+        level = 0;
+
+        //start ticker
+        createjs.Ticker.framerate=60;
+        createjs.Ticker.addEventListener("tick", tock);
+
+        //sound control
+        let soundOnPic = new createjs.Bitmap(queue.getResult('soundOn'));
+        let soundOffPic = new createjs.Bitmap(queue.getResult('soundOff'));
+        soundOnPic.x = soundOffPic.x = 730;
+        soundOnPic.y = soundOffPic.y = 570;
+        soundOnPic.scale = soundOffPic.scale = 1;
+
+        // if muted right when it is loaded the screen, meaning player returns after GameOver
+            if(muted){
+                soundOffPic.addEventListener('click', (function(){
+
+                    bigContainer.addChild(soundOnPic);
+                    bigContainer.removeChild(soundOffPic);
+                    startTheme.play();
+                    muted = false;
+                })  );
+             }
+
+
+        // add controllers on the sound button
+            soundOnPic.addEventListener('click',(function(){
+
+                bigContainer.addChild(soundOffPic);
+                bigContainer.removeChild(soundOnPic);
+                startTheme.stop();
+                muted = true;
+
+
+                        soundOffPic.addEventListener('click', (function(){
+
+                            bigContainer.addChild(soundOnPic);
+                            bigContainer.removeChild(soundOffPic);
+                            startTheme.play();
+                            muted = false;
+
+                        })  )
+            })  );
+
+
+        //start music
+        if (muted === false){
+            startTheme = createjs.Sound.play("startTheme", {loop: -1});
+        }
+
+
+
+
+
+        //draw elements
+        bigContainer = new createjs.Container();
+        bigContainer.startScreen = true;
+        bigContainer.isOn = true;
+
+        let bg = new createjs.Bitmap(queue.getResult("jungle"));
+        bg.scale = 0.5;
+
+        bgBlur = new createjs.Shape();
+        bgBlur.graphics.beginFill("white").drawRect(0,0, stage.canvas.width-100, stage.canvas.height-50);
+        bgBlur.x = 50;
+        bgBlur.y = 25;
+        bgBlur.alpha = 0.7;
+
+
+        let logo = new createjs.Bitmap(queue.getResult("logo"));
+        logo.regX = logo.image.width / 2;
+        logo.x = stage.canvas.width / 2 + 10;
+        logo.y = 130;
+        logo.scale = 0.55;
+
+
+        function moveLogo(){
+            let movelogo = createjs.Tween.get(logo, {paused: false, loop: true})
+                .to({y:90},2000);
+
+            movelogo.bounce = true;
+
+            }
+
+        moveLogo();
+
+
+
+        let playButton = new createjs.Bitmap(queue.getResult('play'));
+        playButton.regX = playButton.image.width / 2;
+        playButton.scale = 0.35;
+        playButton.x = stage.canvas.width / 2;
+        playButton.y = 465;
+
+
+        bigContainer.addChild(bgBlur, logo, playButton);
+
+            if (muted === false){
+                bigContainer.addChild(soundOnPic);
+                 } else {
+                        bigContainer.addChild(soundOffPic);
+                    }
+        stage.addChild(bg, bigContainer);
+
+        loadingContainer.removeAllChildren();
+        stage.removeChild(loadingContainer);
+
+        let info = "goals";
+        playButton.addEventListener("click",
+                    (function (){
+                        startTheme.stop();
+                        showDisplay(info, startLevel);
+
+                    })
+                       );
+        window.addEventListener("keyup", keyUp);
+
+    }
+
+    function showDisplay(name, func) {
+        //this display is shown before and after every level
+
+        bigContainer.removeAllChildren();
+        bigContainer.startScreen = false;
+        bigContainer.isOn = true;
+
+        let mainText, buttonID;
+
+        //console.log("display started");
+
+        if ( name === "goals") {
+            mainText = "Collect all ";
+            buttonID = "start";
+
+            } else if ( name === "congrats") {
+                mainText = "You completed level " + level + "!";
+                buttonID = "next";
+
+                } else if (name === "oops") {
+                    mainText = "Damn, you died!";
+                    buttonID = "tryAgain";
+
+                    } else if (name === "timesUp") {
+                        mainText = "Oops, no more time left.";
+                        buttonID = "tryAgain";
+
+                        } else if (name === "gameOver") {
+                            mainText = "You lost all your lives.";
+                            buttonID = "reStart";
+
+                            } else if (name === "noMoreLevels") {
+                                mainText = "You made it!\n\nMore levels are coming soon!";
+                                buttonID = "reStart";
+                                }
+
+
+        //header part
+
+        let header = new createjs.Bitmap(queue.getResult(name));
+            header.scale = 1;
+            header.regX = header.image.width / 2;
+            header.x = stage.canvas.width / 2;
+            header.y = 100;
+
+
+        //text part
+
+        let main = new createjs.Text(
+            mainText,
+            "40px " + bigFont,
+            "black");
+            main.textAlign = "center";
+            main.textBaseline = "middle";
+            main.x = stage.canvas.width / 2;
+            main.y = 250;
+
+
+        let coin = new createjs.Sprite(queue.getResult('coins'), 'coinTurns');
+            coin.scale = 0.8;
+            coin.x = 530;
+            coin.y = 230;
+            coin.gotoAndPlay('coinTurns');
+
+        let arrows = new createjs.Sprite(queue.getResult('arrowkeys'), 'keyworks');
+            arrows.scale = 0.3;
+            arrows.x = 270;
+            arrows.y = 350;
+
+        let controls = new createjs.Text(
+            "Use the arrow keys\nto move",
+            "20px " + font,
+            "black");
+            controls.textAlign = "left";
+            controls.textBaseline ="middle";
+            controls.x = 420;
+            controls.y = 380;
+
+        let stars = new createjs.Sprite(queue.getResult('stars'), 'threeStars');
+            stars.scale = 0.8;
+            stars.regX = 135;
+            stars.x = stage.canvas.width / 2;
+            stars.y = 375;
+        stars.gotoAndStop('threeStars');
+
+
+        // start button part
+
+        button = new createjs.Bitmap(queue.getResult(buttonID));
+            button.scale = 0.30;
+            button.regX = button.image.width / 2;
+            button.x = stage.canvas.width / 2;
+            button.y = 485;
+
+
+        //an eventListener doesn't return value, so an inside function is created
+        button.addEventListener("click",
+            (function (){
+                moveContainerOut(bigContainer, func);
+                button.removeAllEventListeners("click");
+            })
+             );
+
+
+        bigContainer.info = func;
+        window.addEventListener('keyup', keyUp);
+
+
+
+
+        // add to the stage
+
+        if ( name === "goals") {
+            bigContainer.addChild(bgBlur, header, main, coin, arrows, controls, button);
+
+            } else if ( name === "congrats") {
+                bigContainer.addChild(bgBlur, header, main, stars, button);
+
+                } else if (name === "oops" || name === "timesUp") {
+                    bigContainer.addChild(bgBlur, header, main, button);
+
+                    } else if (name === "gameOver") {
+                        bigContainer.addChild(bgBlur, header, main, button);
+
+                        } else if (name === "noMoreLevels") {
+                            bigContainer.addChild(bgBlur, header, main, button);
+                            }
+
+
+        stage.addChild(bigContainer);
+
+        moveContainerIn(bigContainer);
+
+        stage.update();
+
+    }
+
+    //small functions to make a click sound and move the containers
+        //they were needed to be available globally
+
+    function clickSound () {
+        if (muted === false) {
+            createjs.Sound.play('click');
+        }
+    }
+
+    function moveContainerIn (object) {
+
+        object.y = -700;
+
+        createjs.Tween.get(object, {paused: false, loop: false})
+            .to({y:0}, 1000, createjs.Ease.backInOut)
+            .addEventListener("complete", clickSound)
+
+    }
+
+    function moveContainerOut (object, func) {
+
+        clickSound();
+        createjs.Tween.get(object, {paused: false, loop: false})
+            .to({y:-700}, 1000, createjs.Ease.backIn)
+            .wait(500)
+            .addEventListener("complete", func);
+
+    }
+
+
+    function moveSmallContainerIn(object) {
+
+        createjs.Tween.get(object)
+            .to({y:0}, 2000, createjs.Ease.backOut)
+
+    }
+
+
+    function buildDisplay() {
+        //upper display
+
+        upperContainer = new createjs.Container();
+        upperContainer.y = -100;
+
+        let levelDisp = new createjs.Text("Level: "+ level, "20px " + bigFont, "white");
+        levelDisp.textAlign = "center";
+        levelDisp.x = stage.canvas.width / 2;
+        levelDisp.y = 300;
+        levelDisp.scale = 5;
+
+        let levelBackgrd = new createjs.Shape();
+        levelBackgrd.graphics.beginFill("#a58848").drawRect(0,0, 410, 140);
+        levelBackgrd.regX = 195;
+        levelBackgrd.x = stage.canvas.width / 2;
+        levelBackgrd.y = 285;
+
+        let levelBackgrd2 = new createjs.Shape();
+        levelBackgrd2.graphics.beginFill("#846741").drawRect(0,0, 420, 150);
+        levelBackgrd2.regX = 200;
+        levelBackgrd2.x = stage.canvas.width / 2;
+        levelBackgrd2.y = 280;
+
+            (function() {
+                createjs.Tween.get(levelDisp)
+                    .wait(2000)
+                    .to({x:60, y:15, scale: 1}, 1500);
+
+
+                createjs.Tween.get(levelBackgrd)
+                    .wait(2000)
+                    .to({x:56, y:10, scale: 0.2, alpha: 0.6}, 1500)
+                    .to({x:56, y:10, scale: 0.2, alpha: 0}, 1500);
+
+
+                createjs.Tween.get(levelBackgrd2)
+                    .wait(2000)
+                    .to({x:56, y:10, scale: 0.2, alpha: 0.6}, 1500)
+                    .to({x:56, y:10, scale: 0.2, alpha: 0}, 1500)
+
+            }) ();
+
+        let coinDisp = new createjs.Text("Coins: ", "20px " + font, "white");
+        coinDisp.x = 360;
+        coinDisp.y = 15;
+
+
+
+        coinDispPic = new createjs.Sprite(queue.getResult("coins"), "coin");
+        coinGrayDispPic = new createjs.Sprite(queue.getResult("coins"), "coinGray");
+        coinDispPic.x = coinGrayDispPic.x = 430;
+        coinDispPic.y = coinGrayDispPic.y = 8;
+        coinDispPic.scale = coinGrayDispPic.scale = 0.5;
+        coinDispPic.gotoAndStop('coin');
+        coinGrayDispPic.gotoAndStop('coinGray');
+
+
+        coinsNumber = new createjs.Text(
+            coins + "/" +  treatData.numberOfCoins,
+            "16px " + font,
+            "black"        );
+        coinsNumber.x = 465;
+        coinsNumber.y = 28;
+
+
+        function soundControl() {
+            createjs.Tween.get(levelBackgrd2)
+                .wait(2000)
+
+                .addEventListener("complete",
+                    (function () {
+
+                        happyTheme = createjs.Sound.stop("happyTheme", {loop: -1});
+                        backgroundMusicOn = false;
+
+                        if (muted === false) {
+                            happyTheme = createjs.Sound.play("happyTheme", {loop: -1});
+                            happyTheme.volume = 0.1;
+                            backgroundMusicOn = true;
+                        }
+
+                    })
+                );
+        }
+
+        soundControl();
+
+        let soundOnPic = new createjs.Bitmap(queue.getResult('soundOn'));
+        let soundOffPic = new createjs.Bitmap(queue.getResult('soundOff'));
+        soundOnPic.x = soundOffPic.x = 760;
+        soundOnPic.y = soundOffPic.y = 2;
+        soundOnPic.scale = soundOffPic.scale = 1;
+
+
+
+        //soundcontrols
+
+        soundOnPic.addEventListener('click',(function(){
+
+            console.log("mute button clicked");
+            upperContainer.addChild(soundOffPic);
+            upperContainer.removeChild(soundOnPic);
+                if (backgroundMusicOn === true){
+                    happyTheme.stop();
+
+                }
+
+            muted = true;
+            backgroundMusicOn = false;
+        }) );
+
+            soundOffPic.addEventListener('click', (function(){
+
+
+                upperContainer.addChild(soundOnPic);
+                upperContainer.removeChild(soundOffPic);
+                    if (backgroundMusicOn === false) {
+                        happyTheme = createjs.Sound.play("happyTheme", {loop: -1});
+
+                    }
+
+                muted = false;
+                backgroundMusicOn = true;
+
+            })  );
+
+          if (muted){
+                upperContainer.addChild(soundOffPic);
+                    } else {
+                        upperContainer.addChild(soundOnPic);
+                        }
+
+
+        upperContainer.addChild(coinDisp, coinGrayDispPic, coinsNumber);
+
+        moveSmallContainerIn(upperContainer);
+
+
+        // bottom display
+
+        bottomContainer = new createjs.Container();
+        bottomContainer.y = 100;
+
+        let livesDisp = new createjs.Text(
+            "Lives: ",
+            "20px " + font,
+            "white" );
+
+        livesDisp.x = 25;
+        livesDisp.y = 615;
+
+        let spriteName;
+            if (lives === 3) {
+                spriteName = "threeLives";
+                } else if (lives === 2) {
+                    spriteName = "twoLives";
+                    } else if (lives === 1) {
+                        spriteName = "oneLife";
+                        } else {
+                            spriteName = "zeroLife"
+                            }
+
+        livesSprite = new createjs.Sprite(queue.getResult('hearts'), spriteName);
+        livesSprite.gotoAndStop(spriteName);
+        livesSprite.x = 100;
+        livesSprite.y = 608;
+        livesSprite.scale = 0.4;
+
+        let timeDisp = new createjs.Text(
+            "Time: ",
+            "20px " + font,
+            "white" );
+        timeDisp.x = 360;
+        timeDisp.y = 615;
+
+        timeNumber = new createjs.Text(
+            timer,
+            "20px " + font,
+            "white" );
+        timeNumber.x = 420;
+        timeNumber.y = 615;
+
+        let pointsDisp = new createjs.Text(
+            "Points:  ",
+            "20px " + font,
+            "white" );
+        pointsDisp.x = 650;
+        pointsDisp.y = 615;
+
+        pointsNumber = new createjs.Text(
+            points,
+            "20px " + font,
+            "white"
+        );
+        pointsNumber.x = 730;
+        pointsNumber.y = 615;
+        pointsNumber.set.x = 730;
+        pointsNumber.set.y = 615;
+
+
+
+        bottomContainer.addChild(livesDisp, livesSprite, timeDisp, timeNumber, pointsDisp, pointsNumber);
+
+        moveSmallContainerIn(bottomContainer);
+
+        //add additional elements to the stage in sequence
+        stage.addChild(upperContainer);
+        stage.addChild(bottomContainer);
+        stage.addChild(levelBackgrd2, levelBackgrd, levelDisp);
+
+    }
+
+    function buildHero() {
+
+        //create hero in a container
+        hero = new createjs.Container();
+
+        let rect = new createjs.Shape();
+        rect.graphics.drawRect(0,0, TILESIZE, TILESIZE);
+
+        let sprite = new createjs.Sprite(queue.getResult('hero'), 'herogoes');
+        hero.sprite = sprite;
+
+        hero.sprite.gotoAndPlay("herogoes");
+
+        hero.addChild(rect, sprite);
+
+
+        //hero properties
+        hero.width = TILESIZE;
+        hero.height = TILESIZE;
+        hero.x = stage.canvas.width/2-hero.width/2;
+        hero.y = TILESIZE;
+
+        hero.speedX = 0;
+        hero.speedY = 0;
+        hero.alive = true;
+        hero.moveable = false;
+        hero.hurt = false;
+        hero.won = false;
+        hero.getPoints = false;
+
+        // when hero falls (=dies), some timeout is needed for the animation, before the next function comes
+        hero.animationFallCounter = 0;
+
+
+        //hero controls
+            hero.controls = {
+                    left: false,
+                    right: false,
+                    up: false,
+                    down: false,
+                };
+
+        stage.addChild(hero);
+
+
+        window.addEventListener('keyup', keyUp);
+        window.addEventListener('keydown', keyDown);
+
+    }
+
+    function animateHero () {
+
+        if (hero.alive === false) {
+            //console.log("not alive");
+            if (hero.sprite.currentAnimation !== "down" && hero.sprite.currentAnimation !== "fall") {
+                hero.sprite.gotoAndPlay("fall");
+                if (muted === false){
+                    levelFail = createjs.Sound.play('levelFail');
+                    levelFail.volume = 0.1;
+                }
+
+            }
+
+        } else if (hero.won === true){
+            hero.sprite.gotoAndPlay("stands");
+        }
+
+    }
+
+    function buildEnemy() {
+
+        enemies = [];
+        enemies.moveable = false;
+        enemies.hit = false;
+
+        // find the starting coordinates of the enemies.
+        enemyLevelData = queue.getResult("enemies")[level-1];
+        let enemyCoordinates = [];
+
+        for (let v=0; v < enemyLevelData.numberOfRows; v++){
+            for (let h=0; h < enemyLevelData.numberOfColumns; h++){
+                if (enemyLevelData.map[v][h] === 5){
+                    let enemy = new createjs.Container();
+                    enemy.h = h;
+                    enemy.v = v;
+                    enemyCoordinates.push(enemy);
+
+                }
+            }
+        }
+
+
+        for (let i=0; i < enemyLevelData.numberOfEnemies; i++){
+
+            // create enemy
+            enemies[i] = new createjs.Bitmap(queue.getResult('enemy' + (i+1)));
+            enemies[i].image.height = TILESIZE;
+            enemies[i].scale = 50 / enemies[i].image.width;
+
+            // enemy properties
+            enemies[i].x = TILESIZE * enemyCoordinates[i].h;
+            enemies[i].y = TILESIZE * enemyCoordinates[i].v;
+
+            enemies[i].direction = "";  /* not necessary here, but good to be stated at this point */
+            enemies[i].timeCounter = 0;
+            enemies[i].doesNotChangeDirectionCounter = 3;
+
+            stage.addChild(enemies[i]);
+        }
+
+
+
+    }
+
+    function startLevel  () {
+
+        hitTest = true;
+        coins = 0;
+        timer = 25;
+        tickCounter = 0;
+        second = 0;
+
+
+        if (level === 0) {
+            lives = 3;
+            points = 0;
+
+        }
+
+        if (level > 0) {
+
+            for (let i=0; i<enemies.length; i++){
+                stage.removeChild(enemies[i]);
+                }
+            stage.removeChild(hero);
+            playground.removeAllChildren();
+            stage.removeChild(playground);
+            hero.getPoints = false;
+
+        }
+
+        if (levelRepeat === false){
+            level++;
+        } else {
+            lives--;
+        }
+
+        //I need to retrieve the json data about the treats already here, as I have to display how many coins have to be picked up during the level
+        treatData = queue.getResult("treats")[level - 1];
+        console.log("start level " + level);
+
+
+        buildLevel();
+        buildDisplay();
+        buildEnemy();
+        buildHero();
+
+
+        // movability control, hero and enemy can only move after the displays came in the screen
+
+        function moveableControl() {
+            createjs.Tween.get(hero)
+                .wait(2000)
+                .wait(1500)
+                .addEventListener("complete",
+                    (function () {
+                        hero.moveable = true;
+                        enemies.moveable = true;
+
+                    })
+                );
+        }
+
+        moveableControl();
+
+    }
+
+
+    function buildLevel () {
+
+        playground = new createjs.Container();
+        stage.addChild(playground);
+
+        //create the level with the tiles
+
+        let levelData = queue.getResult("levels")[level-1];
+        let map = levelData.map;
+
+        grid = [];
+
+            //v is "vertical", h is "horizontal"
+
+            for (let v=0; v < levelData.numberOfRows; v++){
+                grid[v] = [];
+
+                for (let h=0; h < levelData.numberOfColumns; h++){
+                    let tileID = map[v][h];
+                    let tile = createTile(tileID);
+                        tile.scale = 50 / 70;
+                        tile.x = h * TILESIZE;
+                        tile.y = v * TILESIZE;
+
+
+                    tile.tileID = tileID;
+
+                    grid[v][h]= tile;
+                }
+
+            }
+
+
+
+        //create the treats
+
+        let treatData = queue.getResult("treats")[level-1];
+            let mapForTreats = treatData.map;
+
+            // gridForTreats is for drawing up the treats on the screen, treatBox is for counting the treats on the screen
+        let gridForTreats = [];
+        treatBox = [];
+
+
+            //v is "vertical", h is "horizontal"
+
+        for (let v=0; v < treatData.numberOfRows; v++){
+            gridForTreats[v] = [];
+
+            for (let h=0; h < treatData.numberOfColumns; h++){
+                let treatID = mapForTreats[v][h];
+
+                let treatItIs = createTreat(treatID);
+                    treatItIs.scale = 0.4;
+                    treatItIs.x = h * TILESIZE;
+                    treatItIs.y = v * TILESIZE;
+                    treatItIs.regX = -12.5 / 0.4;
+                    treatItIs.regY = -12.5 / 0.4;
+
+                treatItIs.treatID = treatID;
+
+                gridForTreats[v][h]= treatItIs;
+            }
+
+        }
+
+    }
+
+
+    function createTile(tileID) {
+
+        //console.log("Create Tile");
+        tile = new createjs.Sprite(queue.getResult("tiles"), tileID);
+        tile.gotoAndStop(tileID);
+
+        playground.addChild(tile);
+
+        return tile;
+
+    }
+
+
+    function createTreat(object) {
+
+        //console.log("Create Treat");
+
+        let type;
+        if (object === 2) {
+            type = "coinTurns";
+        }
+        if (object === 1) {
+            type = "empty";
+        }
+
+        let treat = new createjs.Sprite(queue.getResult("coins"), type);
+
+        if (type === "coinTurns") {
+            treatBox.push(treat);
+        }
+
+        playground.addChild(treat);
+
+        return treat;
+
+    }
+
+
+
+    function moveEnemy() {
+
+
+        // convert framerate into the enemy speed
+        // have random directions and keep going towards that shortly
+
+        for( let i=0 ; i < enemies.length; i++){
+
+                if (enemies.moveable === true) {
+                    enemies[i].timeCounter++;
+                }
+
+                function chooseDirection() {
+                    //enemy moves random directions - I took Peter's example from the lecture
+                    let directions = ["left", "right", "up", "down"];
+
+                    let number = Math.floor(Math.random()*directions.length);
+                    enemies[i].direction = directions[number];
+                    //console.log(enemies[i].direction);
+                }
+
+                if (enemies[i].timeCounter === 60) {
+
+                    enemies[i].doesNotChangeDirectionCounter++;
+
+                    if (enemies[i].doesNotChangeDirectionCounter === 4) {
+
+                        chooseDirection();
+                        enemies[i].doesNotChangeDirectionCounter = 0;
+                    }
+
+
+                    if (enemies[i].direction === "left") {
+                        enemies[i].x -= TILESIZE;
+                        if (canMove(enemies[i])===false){
+                            enemies[i].x += TILESIZE;
+                            chooseDirection();
+                        }
+
+                    } else if  (enemies[i].direction === "right") {
+                        enemies[i].x += TILESIZE;
+                        if (canMove(enemies[i])===false){
+                            enemies[i].x -= TILESIZE;
+                            chooseDirection();
+                        }
+
+                    } else if (enemies[i].direction === "up") {
+                        enemies[i].y -= TILESIZE;
+                        if (canMove(enemies[i])===false){
+                            enemies[i].y += TILESIZE;
+                            chooseDirection();
+                        }
+
+                    } else if (enemies[i].direction === "down") {
+                        enemies[i].y += TILESIZE;
+                        if (canMove(enemies[i])===false){
+                            enemies[i].y -= TILESIZE;
+                            chooseDirection();
+                        }
+
+                    }
+
+                    enemies[i].timeCounter = 0;
+
+                }
+
+
+
+        }
+
+
+    }
+
+
+
+
+    function hitTestForTreats() {
+
+        for(let i=0; i<treatBox.length; i++){
+
+            if(treatBox[i].x === hero.x && treatBox[i].y === hero.y){
+                //console.log("picked Up");
+                let temp = treatBox[i];
+
+                let flyingTreat = [];
+
+                if (muted === false){
+                    coinSound = createjs.Sound.play('coinPick');
+                }
+
+                points += 50;
+                pointsNumber.text = points;
+                            (function () {
+                                createjs.Tween.get(pointsNumber)
+                                    .to({x: pointsNumber.x-5, y: pointsNumber.y-5, scale: 1.3}, 250)
+                                    .to({x: pointsNumber.set.x, y: pointsNumber.set.y, scale: 1.0}, 250);
+                            })  ();
+
+                flyingTreat.push(treatBox[i]);
+                treatBox.splice(i,1);
+
+
+                (function(){
+                    createjs.Tween.get(temp)
+                        .to({x:430, y:8, alpha: 0.2, scale: 0.4}, 500, createjs.Ease.quadIn)
+                        .addEventListener('complete', (function () {
+                                //console.log("coin arrived");
+                                coins++;
+
+                                if (coins ===1) {
+                                    //console.log ("change color");
+                                    upperContainer.removeChild(coinGrayDispPic);
+                                    upperContainer.addChild(coinDispPic);
+                                    coinDispPic.gotoAndStop('coin');
+                                }
+
+                                coinsNumber.text = coins + "/" +  treatData.numberOfCoins;
+                                playground.removeChild(temp);
+                                flyingTreat.splice(temp,1);
+
+                            })
+                        )
+                }) ();
+
+            }
+
+        }
+
+        // THE LEVEL IS COMPLETED IF...
+
+
+                if (coins === treatData.numberOfCoins) {
+                    console.log("completed level " + level);
+                    hero.won = true;
+                    // hero gets points what is displayed
+                        points = points + (timer * 10);
+                        pointsNumber.text = points;
+                            (function () {
+                                createjs.Tween.get(pointsNumber)
+                                    .wait(500)
+                                    .to({x: pointsNumber.x-5, y: pointsNumber.y-5, scale: 1.8}, 250)
+                                    .to({x: pointsNumber.set.x, y: pointsNumber.set.y, scale: 1.0}, 250)
+
+                            })  ();
+
+                    // time left => the remaining time gives extra points with a tween
+                            (function () {
+                                createjs.Tween.get(timeNumber)
+                                    .to({x: timeNumber.x+300, y: timeNumber.y, alpha: 0}, 500)
+                                    .addEventListener("complete",
+                                            (function () {
+                                                pointsNumber.text = points;
+                                            })
+                                    )
+
+                            })  ();
+
+
+                    // soundcontrol
+                    if (muted === false){
+                        happyTheme.stop();
+                        levelWin = createjs.Sound.play('levelWin');
+                        if (timer < 5){
+                            tickSound.stop();
+                        }
+                    }
+
+                    //prepare the booleans info, the next step info and restart the level or game
+
+                    hitTest = false;
+                    levelRepeat = false;
+
+                    let info;
+                    if (level ===3){
+                            info = "noMoreLevels";
+                            showDisplay(info, startScreen);
+
+
+                        } else {
+                            info = "congrats";
+                            showDisplay(info, startLevel);
+                        }
+
+
+                }
+
+
+        // LOOSE LIFE
+
+        // HIT ENEMY or THE SPIKES
+                // hero.hurt checked in canMove function
+
+        if (enemies.hit === false) {
+
+            for(let i=0; i < enemies.length; i++) {
+                if (enemies[i].x === hero.x && enemies[i].y === hero.y) {
+                    console.log('Enemy' + i +' hit');
+                    hero.alive = false;
+                    enemies.hit = true;
+
+                }
+            }
+
+
+            if (hero.hurt === true){
+                console.log('Spike hurt hero');
+                hero.alive = false;
+                enemies.hit = true;
+
+            } else if (timer === 0){
+                        console.log("time's up");
+                        hero.alive = false;
+                        enemies.hit = true;
+
+            }
+
+        } else {
+
+            let animationSpeed = 120;
+
+            hero.animationFallCounter++;
+
+            window.removeEventListener('keyup', keyUp);
+            window.removeEventListener('keydown', keyDown);
+
+            if (muted === false){
+                happyTheme.stop();
+            }
+
+
+            if (hero.animationFallCounter === animationSpeed){
+                hitTest = false;
+
+                let info;
+                    if (lives > 1) {
+
+                        levelRepeat = true;
+
+                        if (timer === 0){
+                                info = "timesUp";
+                            } else {
+                                info = "oops";
+                                }
+                        showDisplay(info, startLevel);
+
+                    } else {
+                        info = "gameOver";
+                        showDisplay(info, startScreen);
+                        lives --;
+                        levelRepeat = false;
+                    }
+
+            }
+
+        }
+
+    }
+
+
+    function keyUp(e){
+        //console.log("keyup" + e.code);
+        // this function is used for every other key action than moving the hero, so the eventlisteners doesn't interfere
+
+        if (e.code === "Enter" || e.code === "NumpadEnter"){
+
+            if (bigContainer.isOn) {
+
+                if (bigContainer.startScreen === true){
+                    startTheme.stop();
+                    let info = "goals";
+                    bigContainer.isOn = false;
+                    showDisplay(info, startLevel);
+
+                } else {
+
+                    window.removeEventListener('keyup', keyUp);
+
+                    moveContainerOut(bigContainer, bigContainer.info);
+                    button.removeAllEventListeners("click");
+                    bigContainer.isOn = false;
+
+                }
+
+            }
+
+        }
+    }
+
+
+    function keyDown(e){
+
+        if (hero.moveable === true) {
+
+            if (e.code === "ArrowDown"){
+                //the concept is if with the next step I am moveable, then I move
+
+                hero.y = hero.y + TILESIZE;
+                    if (canMove(hero)=== false){
+                        //console.log("stopped");
+                        hero.y -=TILESIZE;
+                        }
+            }
+
+
+            if (e.code === "ArrowUp"){
+
+                hero.y = hero.y - TILESIZE;
+                    if (canMove(hero)=== false){
+                        //console.log("stopped");
+                        hero.y +=TILESIZE;
+                    }
+            }
+
+
+            if (e.code === "ArrowRight"){
+
+                hero.x = hero.x + TILESIZE;
+                    if (canMove(hero)=== false){
+                        //console.log("stopped");
+                        hero.x -=TILESIZE;
+                    }
+            }
+
+
+            if (e.code === "ArrowLeft"){
+
+                hero.x = hero.x - TILESIZE;
+                    if (canMove(hero)=== false){
+                        //console.log("stopped");
+                        hero.x +=TILESIZE;
+                    }
+            }
+
+
+        }
+    }
+
+
+    function canMove(object) {
+
+        let moveable = true;
+
+        //If our hero exits the stage, he can't move
+        if (object.x < 0 || object.y < 0 || object.x >=stage.canvas.width || object.y >=stage.canvas.height){
+            return false;
+        }
+
+        //See if the hero or enemy hits the wall ...basically if he has the same coordinates as the tiles in the level.json file
+        let left = Math.floor(object.x / TILESIZE);
+        //let right = Math.floor((object.x + TILESIZE) / TILESIZE);    - this is not needed right now
+        let top = Math.floor(object.y / TILESIZE);
+        //let bottom = Math.floor((object.y + TILESIZE) / TILESIZE);   - this is not needed right now
+
+
+        // tileID 12, 103, 152 are walls, where hero can't move
+        if (grid[top][left].tileID ===12  || grid[top][left].tileID === 103 || grid[top][left].tileID === 152){
+            return false;
+
+            }
+
+        // hero hurts himself, if goes into the spikes
+        if (grid[top][left].tileID === 26 && object === hero) {
+            console.log("spike!!!");
+            hero.hurt = true;
+        }
+
+
+        return moveable;
+
+    }
+
+
+    function time (){
+        // this function handles the countdown of the timer, converts the ticks into seconds
+
+        if (enemies.moveable === true && enemies.hit ===false){
+            tickCounter++;
+
+
+            if (tickCounter === Math.ceil(createjs.Ticker.framerate) ){
+                second++;
+                //console.log(second);
+                timer--;
+                timeNumber.text = timer;
+                tickCounter = 0;
+
+                if (timer < 6){
+
+                    if (muted === false) {
+                        if (timer === 5) {
+                            tickSound = createjs.Sound.play("ticking", {loop: 2});
+                            if (timer === 0){
+                                tickSound.stop();
+                            }
+                        }
+                    }
+
+                    timeNumber.color = "red";
+                    (function () {
+                        createjs.Tween.get(timeNumber)
+
+                            .to({alpha: 0.2}, 400)
+                            .to({alpha: 1.0}, 400);
+                    })  ();
+
+
+                }
+            }
+
+        }
+
+    }
+
+
+    function tock(e){
+
+        if (hitTest) {
+
+            time();
+            hitTestForTreats();
+            moveEnemy();
+            animateHero();
+        }
+
+        stage.update(e);
+
+    }
+
+
+</script>
+
+
+</html>

@@ -1,0 +1,22 @@
+{
+  "framerate": 8,
+  "images": ["img/stars_sprite.png"],
+  "frames": [
+    [22, 18, 84, 86],
+    [115, 18, 84, 86],
+    [115, 18, 270, 86],
+    [22, 18, 270, 86],
+    [22, 111, 270, 86],
+    [22, 206, 270, 86]
+    
+      ],
+
+  "animations": {
+    "singleStar": [0],
+    "noStar": [1],
+    "zeroStar": [2],
+    "oneStar": [3],
+    "twoStars": [4],
+    "threeStars": [5]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "framerate": 8,
+  "images": ["img/coins.png"],
+  "frames":
+        {"width": 80, "height": 71, "regX": 0, "regY": 0, "spacing": 0},
+
+  "animations": {
+    "coin": [0],
+    "coinGray": [7],
+    "coinTurns": [0, 5],
+    "coinGrayTurns": [7, 12],
+    "empty": [6]
+  }
+}
